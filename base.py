@@ -17,6 +17,7 @@ from tme7 import *
 
 PRINT_INTERVAL = 50
 CUDA = False
+CIFAR = False
 
 class ConvNet(nn.Module):
     """
@@ -28,21 +29,25 @@ class ConvNet(nn.Module):
         # On défini d'abord les couches de convolution et de pooling comme un
         # groupe de couches `self.features`
         self.features = nn.Sequential(
-            nn.Conv2d(1, 6, (5, 5), stride=1, padding=2),
-            nn.Tanh(),
+            nn.Conv2d(3, 32, (5, 5), stride=1, padding=2),
+            nn.ReLU(),
             nn.MaxPool2d((2, 2), stride=2, padding=0),
-            nn.Conv2d(6, 16, (5, 5), stride=1, padding=0),
-            nn.Tanh(),
+
+            nn.Conv2d(32, 64, (5, 5), stride=1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2), stride=2, padding=0),
+
+            nn.Conv2d(64, 64, (5, 5), stride=1, padding=0),
+            nn.ReLU(),
             nn.MaxPool2d((2, 2), stride=2, padding=0),
         )
         # On défini les couches fully connected comme un groupe de couches
         # `self.classifier`
+        in_ = 64
         self.classifier = nn.Sequential(
-            nn.Linear(400, 120),
-            nn.Tanh(),
-            nn.Linear(120, 84),
-            nn.Tanh(),
-            nn.Linear(84, 10)
+            nn.Linear(in_, 1000),
+            nn.ReLU(),
+            nn.Linear(1000, 10),
             # Rappel : Le softmax est inclus dans la loss, ne pas le mettre ici
         )
 
@@ -52,6 +57,7 @@ class ConvNet(nn.Module):
         output = self.features(input) # on calcule la sortie des conv
         output = output.view(bsize, -1) # on applati les feature map 2D en un
                                         # vecteur 1D pour chaque input
+        
         output = self.classifier(output) # on calcule la sortie des fc
         return output
 
@@ -62,15 +68,27 @@ def get_dataset(batch_size, path):
     Cette fonction charge le dataset et effectue des transformations sur chaqu
     image (listées dans `transform=...`).
     """
-    train_dataset = datasets.MNIST(path, train=True, download=True,
-        transform=transforms.Compose([
-            transforms.ToTensor()
-        ]))
-    val_dataset = datasets.MNIST(path, train=False, download=True,
-        transform=transforms.Compose([
-            transforms.ToTensor()
-        ]))
-
+    
+    if CIFAR :
+        path = datasets.CIFAR10.url
+        train_dataset = datasets.CIFAR10(path, train=True, download=True,
+                                   transform=transforms.Compose([
+                                       transforms.ToTensor()
+                                   ]))
+        val_dataset = datasets.CIFAR10(path, train=False, download=True,
+                                     transform=transforms.Compose([
+                                         transforms.ToTensor()
+                                     ]))
+    else:
+        train_dataset = datasets.MNIST(path, train=True, download=True,
+                                   transform=transforms.Compose([
+                                       transforms.ToTensor()
+                                   ]))
+        val_dataset = datasets.MNIST(path, train=False, download=True,
+                                     transform=transforms.Compose([
+                                         transforms.ToTensor()
+                                     ]))
+        
     train_loader = torch.utils.data.DataLoader(train_dataset,
                         batch_size=batch_size, shuffle=True, pin_memory=CUDA, num_workers=2)
     val_loader = torch.utils.data.DataLoader(val_dataset,
@@ -196,11 +214,14 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', default=128, type=int, metavar='N', help='mini-batch size (default: 128)')
     parser.add_argument('--lr', default=0.1, type=float, metavar='LR', help='learning rate')
     parser.add_argument('--cuda', dest='cuda', action='store_true', help='activate GPU acceleration')
+    parser.add_argument('--cifar', dest='cifar', action='store_true', help='load CIFAR-10')
 
     args = parser.parse_args()
     if args.cuda:
         CUDA = True
         cudnn.benchmark = True
+    if args.cifar:
+        CIFAR = True
 
     main(args)
 
