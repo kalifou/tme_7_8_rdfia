@@ -1,0 +1,24 @@
+Influence of Learning Rate lr:
+See : screenshots
+
+===>best lr = 0.01
+
+Influence of Batch size w/ lr 0.01
+(moyenne de précision lors de la dernière epoch = 5)
+
+batch-size : 216
+@epoch:5, Total time 76s	Avg loss 1.3988	Avg Prec@1 49.82 %	Avg Prec@5 92.78 %
+
+batch-size : 128
+@epoch:5, Total time 100s	Avg loss 1.1356	Avg Prec@1 59.90 %	Avg Prec@5 95.48 %
+
+batch-size : 64
+@epoch:5, Total time 217s	Avg loss 0.9357	Avg Prec@1 67.05 %	Avg Prec@5 97.04 %
+
+batch-size : 32
+
+@epoch:5, Total time 461s	Avg loss 0.8417	Avg Prec@1 70.60 %	Avg Prec@5 97.75 %
+
+batch-size : 16
+....pretty slow but the accuracy keeps increasing.
+The best performances might be with a batch-size of 1, ie Stochastic Gradient Descent !!
