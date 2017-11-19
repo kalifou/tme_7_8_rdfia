@@ -39,7 +39,7 @@ class ConvNet(nn.Module):
 
             nn.Conv2d(64, 64, (5, 5), stride=1, padding=0),
             nn.ReLU(),
-            nn.MaxPool2d((2, 2), stride=2, padding=0),
+            nn.MaxPool2d((2, 2), stride=2, padding=0, ceil_mode=True),
         )
         # On défini les couches fully connected comme un groupe de couches
         # `self.classifier`
@@ -68,31 +68,41 @@ def get_dataset(batch_size, path):
     Cette fonction charge le dataset et effectue des transformations sur chaqu
     image (listées dans `transform=...`).
     """
-    
+    # Preparing to Batch-Normalize
+    mean = [0.491, 0.492, 0.447]
+    std = [0.202, 0.199, 0.201]
+    # Batch-Normalization & Data-Augmentation
+    # Train : Norm + random_crop + random_horizontal_symetry
+    transform_train=transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean, std),
+                                        transforms.RandomCrop(28),
+                                        transforms.RandomHorizontalFlip
+                                   ])
+    # Testt : Norm + centered_crop
+    transform_test=transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean, std),
+                                        transforms.CenterCrop(28)
+                                   ])
+
     if CIFAR :
         path = datasets.CIFAR10.url
         train_dataset = datasets.CIFAR10(path, train=True, download=True,
-                                   transform=transforms.Compose([
-                                       transforms.ToTensor()
-                                   ]))
+                                         transform=transform_train)
+        
         val_dataset = datasets.CIFAR10(path, train=False, download=True,
-                                     transform=transforms.Compose([
-                                         transforms.ToTensor()
-                                     ]))
+                                       transform=transform_test)
     else:
         train_dataset = datasets.MNIST(path, train=True, download=True,
-                                   transform=transforms.Compose([
-                                       transforms.ToTensor()
-                                   ]))
+                                       transform=transform_train)
+        
         val_dataset = datasets.MNIST(path, train=False, download=True,
-                                     transform=transforms.Compose([
-                                         transforms.ToTensor()
-                                     ]))
+                                     transform=transform_test)
         
     train_loader = torch.utils.data.DataLoader(train_dataset,
                         batch_size=batch_size, shuffle=True, pin_memory=CUDA, num_workers=2)
     val_loader = torch.utils.data.DataLoader(val_dataset,
                         batch_size=batch_size, shuffle=False, pin_memory=CUDA, num_workers=2)
+
 
     return train_loader, val_loader
 
