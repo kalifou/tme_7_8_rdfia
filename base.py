@@ -75,14 +75,14 @@ def get_dataset(batch_size, path):
     # Batch-Normalization & Data-Augmentation
     # Train : Norm + random_crop + random_horizontal_symetry
     transform_train=transforms.Compose([transforms.ToTensor(),
-                                        transforms.Normalize(mean, std),
-                                        transforms.RandomCrop(28),
-                                        transforms.RandomHorizontalFlip
+                                        transforms.Normalize(mean, std)#,
+                                        #transforms.RandomCrop(28),
+                                        #transforms.RandomHorizontalFlip
                                    ])
     # Testt : Norm + centered_crop
     transform_test=transforms.Compose([transforms.ToTensor(),
-                                        transforms.Normalize(mean, std),
-                                        transforms.CenterCrop(28)
+                                        transforms.Normalize(mean, std)#,
+                                        #transforms.CenterCrop(28)
                                    ])
 
     if CIFAR :
