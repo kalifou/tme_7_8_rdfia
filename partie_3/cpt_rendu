@@ -1,0 +1,21 @@
+Partie 3 
+
+Normalisation des exemples de données:
+Elle consiste à uniformiser les données en soustrayant à chaque pixel la moyenne des valeurs (trois channels - RGB) du jeu d'entrainement
+et à le diviser par l'ecart type du même jeu de données.
+Elle permet d'améliorer l'apprentissage en <<débruitant>> les données par élimination de <image moyenne>. 
+
+Augmentation des données:
+
+Il s'agit de générer de nouveaux exemples de données en apprentissage aléatoirement à partir d'exemples existant, 
+pour satisfaire <<la soif de données>> d'un modèle aux poids nombreux.
+
+Variantes d'optimisation:
+Elle consiste dans notre cas à modifier le learning rate au cours de l'apprentissage en le réduisant dans le temps.
+On applique également l'utilisation d'un momentum qui permet de prendre en compte une partie du gradient de l'étape précédente (inertie).
+
+L'implémentation de ces parties (normalisation ,augmentation, optimisation améliorée) est fonctionnelle dans notre code.
+
+Cordialement.
+
+Team René TRAORE & Rémy Portelas

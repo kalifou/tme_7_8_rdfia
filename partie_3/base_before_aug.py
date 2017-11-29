@@ -12,8 +12,6 @@ import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-import torch.optim.lr_scheduler
-
 datasets.CIFAR10.url = "http://webia.lip6.fr/~robert/cours/rdfia/cifar-10-python.tar.gz" # Permet de télécharger CIFAR10 depuis les serveurs UPMC
 
 from tme7 import *
@@ -42,15 +40,14 @@ class ConvNet(nn.Module):
 
             nn.Conv2d(64, 64, (5, 5), stride=1, padding=2),
             nn.ReLU(),
-            nn.MaxPool2d((2, 2), stride=2, padding=0,ceil_mode=True),
+            nn.MaxPool2d((2, 2), stride=2, padding=0),
         )
         # On défini les couches fully connected comme un groupe de couches
         # `self.classifier`
         in_ = 64 * 4 * 4
         self.classifier = nn.Sequential(
             nn.Linear(in_, 1000),
-	    nn.ReLU(),
-            nn.Dropout(),
+            nn.ReLU(),
             nn.Linear(1000, 10),
             # Rappel : Le softmax est inclus dans la loss, ne pas le mettre ici
         )
@@ -77,15 +74,15 @@ def get_dataset(batch_size, path):
     std = [0.202, 0.199, 0.201]
     # Batch-Normalization & Data-Augmentation
     # Train : Norm + random_crop + random_horizontal_symetry
-    transform_train=transforms.Compose([transforms.RandomHorizontalFlip(),
-                                        transforms.RandomCrop(28),
+    transform_train=transforms.Compose([#transforms.RandomHorizontalFlip(),
+                                        #transforms.RandomCrop(28),
                                         transforms.ToTensor(),
-                                        transforms.Normalize(mean, std)                                        
+                                        transforms.Normalize(mean, std)#,                                        
                                    ])
     # Testt : Norm + centered_crop
-    transform_test=transforms.Compose([ transforms.CenterCrop(28),
+    transform_test=transforms.Compose([ #transforms.CenterCrop(28),
                                         transforms.ToTensor(),
-                                        transforms.Normalize(mean, std)
+                                        transforms.Normalize(mean, std)#,
                                    ])
 
     if CIFAR :
@@ -194,8 +191,7 @@ def main(params):
     # define model, loss, optim
     model = ConvNet()
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), params.lr, momentum=0.9)
-    lr_sched = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+    optimizer = torch.optim.SGD(model.parameters(), params.lr)
 
     if CUDA: # si on fait du GPU, passage en CUDA
         model = model.cuda()
@@ -218,7 +214,7 @@ def main(params):
         top1_acc_test, top5_acc_test, loss_test = epoch(test, model, criterion)
         # plot
         plot.update(loss.avg, loss_test.avg, top1_acc.avg, top1_acc_test.avg)
-    lr_sched.step()
+
 
 if __name__ == '__main__':
 
