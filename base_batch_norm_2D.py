@@ -12,6 +12,8 @@ import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+import torch.optim.lr_scheduler
+
 datasets.CIFAR10.url = "http://webia.lip6.fr/~robert/cours/rdfia/cifar-10-python.tar.gz" # Permet de télécharger CIFAR10 depuis les serveurs UPMC
 
 from tme7 import *
@@ -31,15 +33,18 @@ class ConvNet(nn.Module):
         # groupe de couches `self.features`
         self.features = nn.Sequential(
             nn.Conv2d(3, 32, (5, 5), stride=1, padding=2),
+	      nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d((2, 2), stride=2, padding=0),
 
             nn.Conv2d(32, 64, (5, 5), stride=1, padding=2),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d((2, 2), stride=2, padding=0),
 
             nn.Conv2d(64, 64, (5, 5), stride=1, padding=2),
-            nn.ReLU(),
+            nn.BatchNorm2d(64),
+	      nn.ReLU(),
             nn.MaxPool2d((2, 2), stride=2, padding=0,ceil_mode=True),
         )
         # On défini les couches fully connected comme un groupe de couches
@@ -47,6 +52,7 @@ class ConvNet(nn.Module):
         in_ = 64 * 4 * 4
         self.classifier = nn.Sequential(
             nn.Linear(in_, 1000),
+            nn.Dropout(p=0.5),
             nn.ReLU(),
             nn.Linear(1000, 10),
             # Rappel : Le softmax est inclus dans la loss, ne pas le mettre ici
@@ -179,7 +185,7 @@ def epoch(data, model, criterion, optimizer=None):
           'Avg Prec@5 {top5.avg:5.2f} %\n'.format(
            batch_time=int(avg_batch_time.sum), loss=avg_loss,
            top1=avg_top1_acc, top5=avg_top5_acc))
-    plt.savefig("plots/BeforeOPT_Lss_lr"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
+    plt.savefig("plots/BATCHNorm2D_Lss_lr"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
     return avg_top1_acc, avg_top5_acc, avg_loss
 
 
@@ -191,7 +197,8 @@ def main(params):
     # define model, loss, optim
     model = ConvNet()
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), params.lr)
+    optimizer = torch.optim.SGD(model.parameters(), params.lr, momentum=0.9)
+    lr_sched = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
     if CUDA: # si on fait du GPU, passage en CUDA
         model = model.cuda()
@@ -214,7 +221,8 @@ def main(params):
         top1_acc_test, top5_acc_test, loss_test = epoch(test, model, criterion)
         # plot
         plot.update(loss.avg, loss_test.avg, top1_acc.avg, top1_acc_test.avg)
-    plt.savefig("plots/BeforeOPT_Acc_lr_"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
+    plt.savefig("plots/BATCHNorm2D_Acc_lr_"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
+    lr_sched.step()
 
 if __name__ == '__main__':
 
@@ -223,7 +231,7 @@ if __name__ == '__main__':
     parser.add_argument('--path', default='/tmp/datasets/mnist', type=str, metavar='DIR', help='path to dataset')
     parser.add_argument('--epochs', default=5, type=int, metavar='N', help='number of total epochs to run')
     parser.add_argument('--batch-size', default=128, type=int, metavar='N', help='mini-batch size (default: 128)')
-    parser.add_argument('--lr', default=0.01, type=float, metavar='LR', help='learning rate')
+    parser.add_argument('--lr', default=0.1, type=float, metavar='LR', help='learning rate')
     parser.add_argument('--cuda', dest='cuda', action='store_true', help='activate GPU acceleration')
     parser.add_argument('--cifar', dest='cifar', action='store_true', help='load CIFAR-10')
 
@@ -239,7 +247,7 @@ if __name__ == '__main__':
     global EPCHS
     LR = str(args.lr)
     BZE = str(args.batch_size)
-    EPCHS = str(args.epochs)   
+    EPCHS = str(args.epochs)
     main(args)
 
     #input("done")

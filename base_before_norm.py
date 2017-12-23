@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import argparse
 import os
 import time
@@ -40,7 +39,7 @@ class ConvNet(nn.Module):
 
             nn.Conv2d(64, 64, (5, 5), stride=1, padding=2),
             nn.ReLU(),
-            nn.MaxPool2d((2, 2), stride=2, padding=0,ceil_mode=True),
+            nn.MaxPool2d((2, 2), stride=2, padding=0),
         )
         # On défini les couches fully connected comme un groupe de couches
         # `self.classifier`
@@ -69,41 +68,31 @@ def get_dataset(batch_size, path):
     Cette fonction charge le dataset et effectue des transformations sur chaqu
     image (listées dans `transform=...`).
     """
-    # Preparing to Batch-Normalize
-    mean = [0.491, 0.492, 0.447]
-    std = [0.202, 0.199, 0.201]
-    # Batch-Normalization & Data-Augmentation
-    # Train : Norm + random_crop + random_horizontal_symetry
-    transform_train=transforms.Compose([transforms.RandomHorizontalFlip(),
-                                        transforms.RandomCrop(28),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize(mean, std)                                        
-                                   ])
-    # Testt : Norm + centered_crop
-    transform_test=transforms.Compose([ transforms.CenterCrop(28),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize(mean, std)
-                                   ])
-
+    
     if CIFAR :
         path = datasets.CIFAR10.url
         train_dataset = datasets.CIFAR10(path, train=True, download=True,
-                                         transform=transform_train)
-        
+                                   transform=transforms.Compose([
+                                       transforms.ToTensor()
+                                   ]))
         val_dataset = datasets.CIFAR10(path, train=False, download=True,
-                                       transform=transform_test)
+                                     transform=transforms.Compose([
+                                         transforms.ToTensor()
+                                     ]))
     else:
         train_dataset = datasets.MNIST(path, train=True, download=True,
-                                       transform=transform_train)
-        
+                                   transform=transforms.Compose([
+                                       transforms.ToTensor()
+                                   ]))
         val_dataset = datasets.MNIST(path, train=False, download=True,
-                                     transform=transform_test)
+                                     transform=transforms.Compose([
+                                         transforms.ToTensor()
+                                     ]))
         
     train_loader = torch.utils.data.DataLoader(train_dataset,
                         batch_size=batch_size, shuffle=True, pin_memory=CUDA, num_workers=2)
     val_loader = torch.utils.data.DataLoader(val_dataset,
                         batch_size=batch_size, shuffle=False, pin_memory=CUDA, num_workers=2)
-
 
     return train_loader, val_loader
 
@@ -146,7 +135,7 @@ def epoch(data, model, criterion, optimizer=None):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
+        
         # calcul des metriques
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
         batch_time = time.time() - tic
@@ -179,7 +168,7 @@ def epoch(data, model, criterion, optimizer=None):
           'Avg Prec@5 {top5.avg:5.2f} %\n'.format(
            batch_time=int(avg_batch_time.sum), loss=avg_loss,
            top1=avg_top1_acc, top5=avg_top5_acc))
-    plt.savefig("plots/BeforeOPT_Lss_lr"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
+    plt.savefig("plots/BeforeNorm_Lss_lr"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
     return avg_top1_acc, avg_top5_acc, avg_loss
 
 
@@ -214,7 +203,7 @@ def main(params):
         top1_acc_test, top5_acc_test, loss_test = epoch(test, model, criterion)
         # plot
         plot.update(loss.avg, loss_test.avg, top1_acc.avg, top1_acc_test.avg)
-    plt.savefig("plots/BeforeOPT_Acc_lr_"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
+    plt.savefig("plots/BeforeNorm_Acc_lr_"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
 
 if __name__ == '__main__':
 
@@ -223,23 +212,25 @@ if __name__ == '__main__':
     parser.add_argument('--path', default='/tmp/datasets/mnist', type=str, metavar='DIR', help='path to dataset')
     parser.add_argument('--epochs', default=5, type=int, metavar='N', help='number of total epochs to run')
     parser.add_argument('--batch-size', default=128, type=int, metavar='N', help='mini-batch size (default: 128)')
-    parser.add_argument('--lr', default=0.01, type=float, metavar='LR', help='learning rate')
+    parser.add_argument('--lr', default=0.1, type=float, metavar='LR', help='learning rate')
     parser.add_argument('--cuda', dest='cuda', action='store_true', help='activate GPU acceleration')
     parser.add_argument('--cifar', dest='cifar', action='store_true', help='load CIFAR-10')
-
+    
+    
+    
     args = parser.parse_args()
     if args.cuda:
         CUDA = True
         cudnn.benchmark = True
     if args.cifar:
         CIFAR = True
-
+        
     global LR
     global BZE
     global EPCHS
     LR = str(args.lr)
     BZE = str(args.batch_size)
-    EPCHS = str(args.epochs)   
+    EPCHS = str(args.epochs)
     main(args)
 
     #input("done")

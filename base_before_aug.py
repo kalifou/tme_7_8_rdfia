@@ -2,7 +2,7 @@
 import argparse
 import os
 import time
-
+import matplotlib.pyplot as plt
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
@@ -40,7 +40,7 @@ class ConvNet(nn.Module):
 
             nn.Conv2d(64, 64, (5, 5), stride=1, padding=2),
             nn.ReLU(),
-            nn.MaxPool2d((2, 2), stride=2, padding=0, ceil_mode=True),
+            nn.MaxPool2d((2, 2), stride=2, padding=0),
         )
         # On défini les couches fully connected comme un groupe de couches
         # `self.classifier`
@@ -179,7 +179,7 @@ def epoch(data, model, criterion, optimizer=None):
           'Avg Prec@5 {top5.avg:5.2f} %\n'.format(
            batch_time=int(avg_batch_time.sum), loss=avg_loss,
            top1=avg_top1_acc, top5=avg_top5_acc))
-
+    plt.savefig("plots/BeforeAUGM_Lss_lr"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
     return avg_top1_acc, avg_top5_acc, avg_loss
 
 
@@ -214,6 +214,7 @@ def main(params):
         top1_acc_test, top5_acc_test, loss_test = epoch(test, model, criterion)
         # plot
         plot.update(loss.avg, loss_test.avg, top1_acc.avg, top1_acc_test.avg)
+    plt.savefig("plots/BeforeAUGM_Acc_lr_"+LR+"_bsz_"+BZE+"_epochs_"+EPCHS+".png")
 
 
 if __name__ == '__main__':
@@ -233,7 +234,13 @@ if __name__ == '__main__':
         cudnn.benchmark = True
     if args.cifar:
         CIFAR = True
-
+    
+    global LR
+    global BZE
+    global EPCHS
+    LR = str(args.lr)
+    BZE = str(args.batch_size)
+    EPCHS = str(args.epochs)   
     main(args)
 
-    input("done")
+    #input("done")
